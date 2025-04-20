@@ -1,0 +1,29 @@
+# Ignore Go binary executables
+/bin/
+/build/
+/obj/
+
+# Ignore Go test result files
+*.test
+
+# Ignore vendor directory (if using Go modules with vendoring enabled)
+vendor/
+
+# Ignore the .env file for sensitive information
+.env
+
+# Ignore local IDE and editor settings
+.idea/
+.vscode/
+
+# Ignore the Go modules cache (if not using Go modules)
+go.sum
+go.mod
+
+# Ignore Docker files
+*.log
+.docker/
+docker-compose.override.yml
+
+# Ignore volume data for PostgreSQL (this directory contains your DB data)
+pgdata/
