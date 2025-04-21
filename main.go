@@ -35,6 +35,8 @@ func main() {
 	// Register and Login routes
 	router.POST("/register", handlers.Register(db))
 	router.POST("/login", handlers.Login(db))
+	router.POST("/product", handlers.AddProduct(db))
+	router.GET("/product/:id", handlers.GetProductByID(db))
 
 	// Start the server
 	router.Run("0.0.0.0:8080")
