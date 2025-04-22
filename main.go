@@ -42,6 +42,8 @@ func main() {
 	r.GET("/brands/:id", handlers.GetBrandByID(db))
 	r.GET("/categories", handlers.GetAllCategories(db))
 	r.GET("/categories/:id", handlers.GetCategoryByID(db))
+	r.GET("/subcategories", handlers.GetAllSubCategories(db))
+	r.GET("/subcategories/:id", handlers.GetSubCategoryByID(db))
 
 	// Protected routes (admin-only for product, brand, etc.)
 	adminGroup := r.Group("/admin")
@@ -57,8 +59,11 @@ func main() {
 		adminGroup.PUT("/categories/:id", handlers.UpdateCategory(db))
 		adminGroup.DELETE("/categories/:id", handlers.DeleteCategory(db))
 		adminGroup.GET("/categories/:id", handlers.GetCategoryByID(db))
-		adminGroup.POST("/subcategories", handlers.CreateSubcategory(db))
-		adminGroup.POST("/attributes", handlers.CreateAttribute(db))
+		adminGroup.POST("/subcategories", handlers.CreateSubCategory(db))
+		adminGroup.PUT("/subcategories/:id", handlers.UpdateSubCategory(db))
+		adminGroup.DELETE("/subcategories/:id", handlers.DeleteSubCategory(db))
+		adminGroup.GET("/subcategories", handlers.GetAllSubCategories(db))
+		adminGroup.GET("/subcategories/:id", handlers.GetSubCategoryByID(db))
 		adminGroup.POST("/attribute-values", handlers.CreateAttributeValue(db))
 	}
 
