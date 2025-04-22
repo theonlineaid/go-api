@@ -19,12 +19,22 @@ type Brand struct {
 }
 
 type Category struct {
-	ID              int    `json:"id"`
-	CategoryName    string `json:"category_name"`
-	Image           string `json:"image"`
-	IsSpecial       int    `json:"is_special"`
-	PriceVisibility int    `json:"price_visibility"`
-	Status          int    `json:"status"`
+	ID                 int       `json:"id"`
+	Code               *string   `json:"code,omitempty"`
+	CategoryName       string    `json:"category_name"`
+	CategoryImg        string    `json:"category_img"`
+	Image              string    `json:"image"`
+	CategoryVisibility int       `json:"category_visibility"`
+	IsSpecial          int       `json:"is_special"`
+	IsFeatured         int       `json:"is_featured"`
+	Position           *int      `json:"position,omitempty"`
+	PriceVisibility    int       `json:"price_visibility"`
+	Status             int       `json:"status"`
+	CreatedBy          string    `json:"created_by" binding:"required"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	ProductsCount      int       `json:"products_count"`
+	SubCategories      []any     `json:"sub_categories"` // Replace `any` with actual sub-category type when defined
 }
 
 type Subcategory struct {
