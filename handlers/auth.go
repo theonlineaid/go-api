@@ -1,76 +1,108 @@
+// handlers/auth.go
 package handlers
 
 import (
 	"database/sql"
-	"log"
-	"net/http"
-
-	"my-api/utils" // Update this path to match your project structure
-
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
+	"log"
+	"my-api/utils"
+	"net/http"
 )
 
-// Register handler
+type RegisterInput struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Role     string `json:"role" binding:"required"` // e.g., user, admin
+}
+
 func Register(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var user struct {
-			Username string `json:"username"`
-			Password string `json:"password"`
-		}
-
-		// Bind incoming JSON to the user struct
-		if err := c.ShouldBindJSON(&user); err != nil {
+		var input RegisterInput
+		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 			return
 		}
 
-		// Hash the password before storing
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		// Validate role
+		if input.Role != "user" && input.Role != "admin" && input.Role != "manager" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role. Must be user, admin, or manager"})
+			return
+		}
+
+		// Hash the password
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 		if err != nil {
 			log.Println("Error hashing password:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error hashing password"})
 			return
 		}
 
-		// Prepare SQL query to insert the new user
-		query := `INSERT INTO users (username, password) VALUES ($1, $2)`
-		_, err = db.Exec(query, user.Username, string(hashedPassword))
+		// Insert user
+		query := `INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id`
+		var userID int
+		err = db.QueryRow(query, input.Username, string(hashedPassword), input.Role).Scan(&userID)
 		if err != nil {
+			if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+				c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+				return
+			}
 			log.Println("Error inserting user:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "User creation failed"})
 			return
 		}
 
-		// Respond with success message
-		c.JSON(http.StatusOK, gin.H{"message": "User created successfully"})
+		c.JSON(http.StatusOK, gin.H{"message": "User created successfully", "user_id": userID})
 	}
+}
+
+type LoginInput struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 func Login(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var input struct {
-			Username string `json:"username"`
-			Password string `json:"password"`
-		}
+		var input LoginInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 			return
 		}
 
-		var storedPassword string
-		err := db.QueryRow("SELECT password FROM users WHERE username = $1", input.Username).Scan(&storedPassword)
+		var user struct {
+			Password string
+			Role     string
+		}
+		err := db.QueryRow("SELECT password, role FROM users WHERE username = $1", input.Username).
+			Scan(&user.Password, &user.Role)
 		if err != nil {
+			if err == sql.ErrNoRows {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+				return
+			}
+			log.Println("Error querying user:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+			return
+		}
+
+		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
 		}
 
-		if err := bcrypt.CompareHashAndPassword([]byte(storedPassword), []byte(input.Password)); err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		// Generate JWT with role
+		token, err := utils.GenerateJWT(input.Username, user.Role)
+		if err != nil {
+			log.Println("Error generating JWT:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 			return
 		}
 
-		token, _ := utils.GenerateJWT(input.Username)
-		c.JSON(http.StatusOK, gin.H{"token": token})
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Login successful",
+			"token":   token,
+			"role":    user.Role,
+		})
 	}
 }

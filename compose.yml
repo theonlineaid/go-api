@@ -1,4 +1,4 @@
-# version: '3.8'
+version: '3.8'
 
 services:
   db:
@@ -11,6 +11,9 @@ services:
       - "5432:5432"
     volumes:
       - ./pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
 
   app:
     build: .
@@ -24,6 +27,12 @@ services:
       DB_NAME: ${DB_NAME}
     depends_on:
       - db
+    networks:
+      - app-network
 
 volumes:
   pgdata:
+
+networks:
+  app-network:
+    driver: bridge

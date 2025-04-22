@@ -1,43 +1,65 @@
+// main.go
 package main
 
 import (
 	"database/sql"
-	"log"
-	"my-api/handlers" // Update the import path according to your project structure
-
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"log"
+	"my-api/handlers"
+	"os"
 )
 
 func main() {
-	// Load environment variables
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// Database connection
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
 
-	// Connect to the database
-	connStr := "user=admin password=secret dbname=mydb host=db port=5432 sslmode=disable"
+	connStr := "host=" + dbHost + " port=" + dbPort + " user=" + dbUser + " password=" + dbPassword + " dbname=" + dbName + " sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal("Failed to connect to the database:", err)
+		log.Fatal("Failed to connect to database:", err)
 	}
 	defer db.Close()
 
-	// Test the DB connection
-	if err := db.Ping(); err != nil {
-		log.Fatal("Failed to ping the database:", err)
+	if err = db.Ping(); err != nil {
+		log.Fatal("Failed to ping database:", err)
 	}
 
-	// Setup Gin router
-	router := gin.Default()
+	// Initialize Gin router
+	r := gin.Default()
 
-	// Register and Login routes
-	router.POST("/register", handlers.Register(db))
-	router.POST("/login", handlers.Login(db))
-	router.POST("/product", handlers.AddProduct(db))
-	router.GET("/product/:id", handlers.GetProductByID(db))
+	// Public routes
+	r.POST("/register", handlers.Register(db))
+	r.POST("/login", handlers.Login(db))
 
-	// Start the server
-	router.Run("0.0.0.0:8080")
+	// Protected routes (admin-only for product, brand, etc.)
+	adminGroup := r.Group("/admin")
+	adminGroup.Use(handlers.JWTAuthMiddleware("admin"))
+	{
+		adminGroup.POST("/products", handlers.AddProduct(db))
+		adminGroup.GET("/products/:id", handlers.GetProductByID(db))
+		adminGroup.POST("/brands", handlers.CreateBrand(db))
+		adminGroup.POST("/categories", handlers.CreateCategory(db))
+		adminGroup.POST("/subcategories", handlers.CreateSubcategory(db))
+		adminGroup.POST("/attributes", handlers.CreateAttribute(db))
+		adminGroup.POST("/attribute-values", handlers.CreateAttributeValue(db))
+	}
+
+	// User routes (example: users can view products)
+	userGroup := r.Group("/user")
+	userGroup.Use(handlers.JWTAuthMiddleware("user"))
+	{
+		userGroup.GET("/products/:id", handlers.GetProductByID(db))
+	}
+
+	// Start server
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Fatal(r.Run(":" + port))
 }
