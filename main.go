@@ -3,11 +3,12 @@ package main
 
 import (
 	"database/sql"
-	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
 	"log"
 	"my-api/handlers"
 	"os"
+
+	"github.com/gin-gonic/gin"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -35,14 +36,21 @@ func main() {
 	// Public routes
 	r.POST("/register", handlers.Register(db))
 	r.POST("/login", handlers.Login(db))
+	r.GET("/products", handlers.GetAllProducts(db))
+	r.GET("/products/:id", handlers.GetProductByID(db))
+	r.GET("/brands", handlers.GetAllBrands(db))
+	r.GET("/brands/:id", handlers.GetBrandByID(db))
 
 	// Protected routes (admin-only for product, brand, etc.)
 	adminGroup := r.Group("/admin")
 	adminGroup.Use(handlers.JWTAuthMiddleware("admin"))
 	{
 		adminGroup.POST("/products", handlers.AddProduct(db))
+		adminGroup.GET("/products", handlers.GetAllProducts(db))
 		adminGroup.GET("/products/:id", handlers.GetProductByID(db))
 		adminGroup.POST("/brands", handlers.CreateBrand(db))
+		adminGroup.PUT("/brands/:id", handlers.UpdateBrand(db))
+		adminGroup.DELETE("/brands/:id", handlers.DeleteBrand(db))
 		adminGroup.POST("/categories", handlers.CreateCategory(db))
 		adminGroup.POST("/subcategories", handlers.CreateSubcategory(db))
 		adminGroup.POST("/attributes", handlers.CreateAttribute(db))
@@ -54,6 +62,7 @@ func main() {
 	userGroup.Use(handlers.JWTAuthMiddleware("user"))
 	{
 		userGroup.GET("/products/:id", handlers.GetProductByID(db))
+		userGroup.GET("/products", handlers.GetAllProducts(db))
 	}
 
 	// Start server

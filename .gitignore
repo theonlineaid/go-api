@@ -18,7 +18,7 @@ vendor/
 
 # Ignore the Go modules cache (if not using Go modules)
 go.sum
-go.mod
+# go.mod
 
 # Ignore Docker files
 *.log

@@ -3,12 +3,13 @@ package handlers
 
 import (
 	"database/sql"
-	"github.com/gin-gonic/gin"
-	"github.com/lib/pq"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"my-api/utils"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type RegisterInput struct {

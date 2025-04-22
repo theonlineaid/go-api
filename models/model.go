@@ -1,11 +1,21 @@
 // models/models.go
 package models
 
+import "time"
+
 type Brand struct {
-	ID        int    `json:"id"`
-	BrandName string `json:"brand_name"`
-	Image     string `json:"image"`
-	Status    int    `json:"status"`
+	ID                int       `json:"id"`
+	BrandName         string    `json:"brand_name" binding:"required"`
+	Image             string    `json:"image"`
+	Status            int       `json:"status"`
+	IsFeature         bool      `json:"is_feature"`
+	IsPublish         bool      `json:"is_publish"`
+	IsSpecial         bool      `json:"is_special"`
+	IsApprovedByAdmin bool      `json:"is_approved_by_admin"`
+	IsVisibleToGuest  bool      `json:"is_visible_to_guest"`
+	CreatedBy         string    `json:"created_by" binding:"required"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 type Category struct {

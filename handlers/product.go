@@ -3,11 +3,12 @@ package handlers
 
 import (
 	"database/sql"
-	"github.com/gin-gonic/gin"
-	"github.com/lib/pq"
 	"log"
 	"my-api/models"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 type CreateProductRequest struct {
@@ -181,102 +182,70 @@ func AddProduct(db *sql.DB) gin.HandlerFunc {
 func GetProductByID(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		log.Println("Fetching product with ID:", id)
-
 		var product models.Product
 		query := `
-            SELECT id, brand_id, category_id, sub_category_id, p_code, weight, product_name, 
-                   product_code, price, tax_type, image, serial_number, is_saleable, 
-                   is_barcode, is_warranty, is_variation, status, rating, current_stock
+            SELECT id, brand_id, category_id, sub_category_id, product_name, product_code, 
+                   tax_type, image, serial_number, is_saleable, is_barcode, is_warranty, 
+                   is_variation, status, rating, current_stock, price
             FROM products WHERE id = $1`
 		err := db.QueryRow(query, id).Scan(
-			&product.ID,
-			&product.BrandID,
-			&product.CategoryID,
-			&product.SubCategoryID,
-			&product.PCode,
-			&product.Weight,
-			&product.ProductName,
-			&product.ProductCode,
-			&product.Price,
-			&product.TaxType,
-			&product.Image,
-			&product.SerialNumber,
-			&product.IsSaleable,
-			&product.IsBarcode,
-			&product.IsWarranty,
-			&product.IsVariation,
-			&product.Status,
-			&product.Rating,
-			&product.CurrentStock,
+			&product.ID, &product.BrandID, &product.CategoryID, &product.SubCategoryID,
+			&product.ProductName, &product.ProductCode, &product.TaxType, &product.Image,
+			&product.SerialNumber, &product.IsSaleable, &product.IsBarcode, &product.IsWarranty,
+			&product.IsVariation, &product.Status, &product.Rating, &product.CurrentStock, &product.Price,
 		)
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+			return
+		}
 		if err != nil {
-			if err == sql.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
-			} else {
-				log.Println("Get product error:", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get product"})
-			}
+			log.Println("Error querying product:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch product"})
 			return
 		}
 
-		// Fetch attributes
-		var attributes []models.ProductAttribute
-		attrQuery := `
-            SELECT id, product_id, attribute_id, attribute_value_id
-            FROM product_attributes WHERE product_id = $1`
-		rows, err := db.Query(attrQuery, id)
-		if err != nil {
-			log.Println("Get attributes error:", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get attributes"})
-			return
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var attr models.ProductAttribute
-			if err := rows.Scan(&attr.ID, &attr.ProductID, &attr.AttributeID, &attr.AttributeValueID); err != nil {
-				log.Println("Scan attributes error:", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan attributes"})
-				return
-			}
-			attributes = append(attributes, attr)
-		}
+		c.JSON(http.StatusOK, gin.H{"product": product})
+	}
+}
 
-		// Fetch variations
-		var variations []models.VariationProduct
-		varQuery := `
-            SELECT id, product_id, sku, sale_price, default_sell_price, discount, image, current_stock
-            FROM variation_products WHERE product_id = $1`
-		rows, err = db.Query(varQuery, id)
+func GetAllProducts(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		query := `
+            SELECT id, brand_id, category_id, sub_category_id, product_name, product_code, 
+                   tax_type, image, serial_number, is_saleable, is_barcode, is_warranty, 
+                   is_variation, status, rating, current_stock, price
+            FROM products`
+		rows, err := db.Query(query)
 		if err != nil {
-			log.Println("Get variations error:", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get variations"})
+			log.Println("Error querying products:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch products"})
 			return
 		}
 		defer rows.Close()
+
+		var products []models.Product
 		for rows.Next() {
-			var variation models.VariationProduct
-			if err := rows.Scan(
-				&variation.ID,
-				&variation.ProductID,
-				&variation.SKU,
-				&variation.SalePrice,
-				&variation.DefaultSellPrice,
-				&variation.Discount,
-				&variation.Image,
-				&variation.CurrentStock,
-			); err != nil {
-				log.Println("Scan variations error:", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan variations"})
+			var product models.Product
+			err := rows.Scan(
+				&product.ID, &product.BrandID, &product.CategoryID, &product.SubCategoryID,
+				&product.ProductName, &product.ProductCode, &product.TaxType, &product.Image,
+				&product.SerialNumber, &product.IsSaleable, &product.IsBarcode, &product.IsWarranty,
+				&product.IsVariation, &product.Status, &product.Rating, &product.CurrentStock, &product.Price,
+			)
+			if err != nil {
+				log.Println("Error scanning product:", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process products"})
 				return
 			}
-			variations = append(variations, variation)
+			products = append(products, product)
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"product":    product,
-			"attributes": attributes,
-			"variations": variations,
-		})
+		if err = rows.Err(); err != nil {
+			log.Println("Error iterating products:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch products"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"products": products})
 	}
 }

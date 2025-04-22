@@ -13,8 +13,17 @@ CREATE TABLE IF NOT EXISTS brands (
     id SERIAL PRIMARY KEY,
     brand_name VARCHAR(255) NOT NULL,
     image TEXT,
-    status INT DEFAULT 1
+    status INT DEFAULT 1,
+    is_feature BOOLEAN DEFAULT FALSE,
+    is_publish BOOLEAN DEFAULT FALSE,
+    is_special BOOLEAN DEFAULT FALSE,
+    is_approved_by_admin BOOLEAN DEFAULT FALSE,
+    is_visible_to_guest BOOLEAN DEFAULT TRUE,
+    created_by VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- Categories table
 CREATE TABLE IF NOT EXISTS categories (
@@ -112,16 +121,6 @@ CREATE TABLE IF NOT EXISTS variation_products (
 );
 
 -- Sample data
-INSERT INTO users (username, password, role) 
-VALUES 
-    ('admin', '$2a$10$YOUR_HASH_HERE', 'admin'), -- Replace with bcrypt hash for 'admin123'
-    ('user1', '$2a$10$YOUR_HASH_HERE', 'user'); -- Replace with bcrypt hash for 'user123'
-
-INSERT INTO brands (brand_name, image) 
-VALUES 
-    ('Nike', 'brands/nike_logo.jpg'),
-    ('Adidas', 'brands/adidas_logo.jpg');
-
 INSERT INTO categories (id, category_name, is_special, price_visibility, image) 
 VALUES 
     (33, 'GLASS', 0, 0, 'categories/glass_icon.jpg');
