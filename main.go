@@ -78,6 +78,14 @@ func main() {
 		adminGroup.GET("/subcategories/:id", handlers.GetSubCategoryByID(db))
 		adminGroup.POST("/attribute-values", handlers.CreateAttributeValue(db))
 		adminGroup.GET("/session", handlers.Session(db))
+		adminGroup.POST("/address", handlers.AdminCreateAddress(db))
+		adminGroup.PUT("/address/:id", handlers.AdminUpdateAddress(db))
+
+		adminGroup.POST("/users", handlers.AdminCreateUser(db))
+		adminGroup.GET("/users", handlers.AdminGetAllUsers(db))
+		adminGroup.GET("/users/:id", handlers.AdminGetUser(db))
+		adminGroup.PUT("/users/:id", handlers.AdminUpdateUser(db))
+		adminGroup.DELETE("/users/:id", handlers.AdminDeleteUser(db))
 	}
 
 	// User routes
@@ -96,6 +104,7 @@ func main() {
 		userGroup.POST("/address", handlers.AddAddress(db))
 		userGroup.GET("/addresses", handlers.GetAddresses(db))
 		userGroup.PUT("/address/:id", handlers.UpdateAddress(db))
+		userGroup.GET("/address/:id", handlers.GetAddressByID(db))
 		userGroup.DELETE("/address/:id", handlers.DeleteAddress(db))
 	}
 

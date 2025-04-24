@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS login_sessions (
     device VARCHAR(100),
     ip_address VARCHAR(45), -- Supports IPv4/IPv6
     login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Shipping addresses table
