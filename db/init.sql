@@ -9,16 +9,23 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     phone_number VARCHAR(20),
     image TEXT,
-    address_line1 VARCHAR(100),
-    city VARCHAR(50),
-    country VARCHAR(50),
-    postal_code VARCHAR(20),
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Addresses table
+CREATE TABLE IF NOT EXISTS addresses (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    address_line1 VARCHAR(100) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    country VARCHAR(50) NOT NULL,
+    postal_code VARCHAR(20) NOT NULL,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('home', 'office', 'other')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 -- Login sessions table
 CREATE TABLE IF NOT EXISTS login_sessions (
     id SERIAL PRIMARY KEY,

@@ -4,22 +4,19 @@ package models
 import "time"
 
 type User struct {
-	ID           int       `json:"id"`
-	Username     string    `json:"username" binding:"required"`
-	Email        string    `json:"email" binding:"required,email"`
-	Password     string    `json:"password" binding:"required"`
-	Role         string    `json:"role" binding:"required"` // user, admin, manager
-	PhoneNumber  *string   `json:"phone_number,omitempty"`
-	Image        *string   `json:"image,omitempty"`
-	AddressLine1 *string   `json:"address_line1,omitempty"`
-	City         *string   `json:"city,omitempty"`
-	Country      *string   `json:"country,omitempty"`
-	PostalCode   *string   `json:"postal_code,omitempty"`
-	IsVerified   bool      `json:"is_verified"`
-	IsBlocked    bool      `json:"is_blocked"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID          int       `json:"id"`
+	Username    string    `json:"username" binding:"required"`
+	Email       string    `json:"email" binding:"required,email"`
+	Password    string    `json:"password" binding:"required"`
+	Role        string    `json:"role" binding:"required"` // user, admin, manager
+	PhoneNumber *string   `json:"phone_number,omitempty"`
+	Image       *string   `json:"image,omitempty"`
+	IsVerified  bool      `json:"is_verified"`
+	IsBlocked   bool      `json:"is_blocked"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
+
 type Address struct {
 	ID           int       `json:"id"`
 	UserID       int       `json:"user_id"`

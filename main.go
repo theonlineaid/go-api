@@ -87,11 +87,16 @@ func main() {
 		userGroup.GET("/products/:id", handlers.GetProductByID(db))
 		userGroup.GET("/products", handlers.GetAllProducts(db))
 		userGroup.GET("/session", handlers.Session(db))
+		userGroup.GET("/me", handlers.GetUserDetails(db))
 		userGroup.POST("/logout", handlers.Logout(db))
 		userGroup.POST("/shipping-address", handlers.AddShippingAddress(db))
 		userGroup.POST("/billing-address", handlers.AddBillingAddress(db))
 		userGroup.PATCH("/shipping-address/:id/default", handlers.SetDefaultShippingAddress(db))
 		userGroup.PATCH("/billing-address/:id/default", handlers.SetDefaultBillingAddress(db))
+		userGroup.POST("/address", handlers.AddAddress(db))
+		userGroup.GET("/addresses", handlers.GetAddresses(db))
+		userGroup.PUT("/address/:id", handlers.UpdateAddress(db))
+		userGroup.DELETE("/address/:id", handlers.DeleteAddress(db))
 	}
 
 	// Start server

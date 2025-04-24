@@ -19,26 +19,21 @@ func Session(db *sql.DB) gin.HandlerFunc {
 		}
 
 		var user struct {
-			ID           int
-			Username     string
-			Email        string
-			Role         string
-			PhoneNumber  *string
-			Image        *string
-			AddressLine1 *string
-			City         *string
-			Country      *string
-			PostalCode   *string
-			IsVerified   bool
-			IsBlocked    bool
+			ID          int
+			Username    string
+			Email       string
+			Role        string
+			PhoneNumber *string
+			Image       *string
+			IsVerified  bool
+			IsBlocked   bool
 		}
 		err := db.QueryRow(`
-			SELECT id, username, email, role, phone_number, image, address_line1, city, country, postal_code, is_verified, is_blocked
+			SELECT id, username, email, role, phone_number, image, is_verified, is_blocked
 			FROM users
 			WHERE id = $1
 		`, userID).Scan(&user.ID, &user.Username, &user.Email, &user.Role,
-			&user.PhoneNumber, &user.Image, &user.AddressLine1, &user.City, &user.Country, &user.PostalCode,
-			&user.IsVerified, &user.IsBlocked)
+			&user.PhoneNumber, &user.Image, &user.IsVerified, &user.IsBlocked)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
@@ -47,6 +42,32 @@ func Session(db *sql.DB) gin.HandlerFunc {
 			log.Println("Error querying user:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
 			return
+		}
+
+		// Fetch addresses
+		rows, err := db.Query(`
+			SELECT id, user_id, address_line1, city, country, postal_code, type, created_at
+			FROM addresses
+			WHERE user_id = $1
+		`, userID)
+		if err != nil {
+			log.Println("Error querying addresses:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+			return
+		}
+		defer rows.Close()
+
+		var addresses []models.Address
+		for rows.Next() {
+			var addr models.Address
+			err := rows.Scan(&addr.ID, &addr.UserID, &addr.AddressLine1, &addr.City, &addr.Country,
+				&addr.PostalCode, &addr.Type, &addr.CreatedAt)
+			if err != nil {
+				log.Println("Error scanning address:", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+				return
+			}
+			addresses = append(addresses, addr)
 		}
 
 		// Fetch shipping addresses
@@ -135,12 +156,9 @@ func Session(db *sql.DB) gin.HandlerFunc {
 			"role":               user.Role,
 			"phone_number":       user.PhoneNumber,
 			"image":              user.Image,
-			"address_line1":      user.AddressLine1,
-			"city":               user.City,
-			"country":            user.Country,
-			"postal_code":        user.PostalCode,
 			"is_verified":        user.IsVerified,
 			"is_blocked":         user.IsBlocked,
+			"addresses":          addresses,
 			"shipping_addresses": shippingAddresses,
 			"billing_addresses":  billingAddresses,
 			"login_sessions":     loginSessions,

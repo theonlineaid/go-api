@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"my-api/models"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,6 +19,195 @@ type AddressInput struct {
 	Type         string `json:"type" binding:"required,oneof=home office other"`
 }
 
+// AddAddress creates a new address for the user
+func AddAddress(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		var input AddressInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+			return
+		}
+
+		query := `
+			INSERT INTO addresses (user_id, address_line1, city, country, postal_code, type, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, NOW())
+			RETURNING id
+		`
+		var addressID int
+		err := db.QueryRow(query, userID, input.AddressLine1, input.City, input.Country, input.PostalCode, input.Type).Scan(&addressID)
+		if err != nil {
+			log.Println("Error inserting address:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message":    "Address added",
+			"address_id": addressID,
+			"type":       input.Type,
+		})
+	}
+}
+
+// GetAddresses retrieves all addresses for the user
+func GetAddresses(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		rows, err := db.Query(`
+			SELECT id, user_id, address_line1, city, country, postal_code, type, created_at
+			FROM addresses
+			WHERE user_id = $1
+		`, userID)
+		if err != nil {
+			log.Println("Error querying addresses:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+			return
+		}
+		defer rows.Close()
+
+		var addresses []models.Address
+		for rows.Next() {
+			var addr models.Address
+			err := rows.Scan(&addr.ID, &addr.UserID, &addr.AddressLine1, &addr.City, &addr.Country,
+				&addr.PostalCode, &addr.Type, &addr.CreatedAt)
+			if err != nil {
+				log.Println("Error scanning address:", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+				return
+			}
+			addresses = append(addresses, addr)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message":   "Addresses retrieved",
+			"addresses": addresses,
+		})
+	}
+}
+
+// UpdateAddress updates an existing address
+func UpdateAddress(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		addressIDStr := c.Param("id")
+		addressID, err := strconv.Atoi(addressIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid address ID"})
+			return
+		}
+
+		var input AddressInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+			return
+		}
+
+		tx, err := db.Begin()
+		if err != nil {
+			log.Println("Error starting transaction:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+			return
+		}
+		defer tx.Rollback()
+
+		var existsAddr bool
+		err = tx.QueryRow(`
+			SELECT EXISTS (SELECT 1 FROM addresses WHERE id = $1 AND user_id = $2)
+		`, addressID, userID).Scan(&existsAddr)
+		if err != nil {
+			log.Println("Error verifying address:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+			return
+		}
+		if !existsAddr {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Address not found or not owned by user"})
+			return
+		}
+
+		result, err := tx.Exec(`
+			UPDATE addresses
+			SET address_line1 = $1, city = $2, country = $3, postal_code = $4, type = $5
+			WHERE id = $6 AND user_id = $7
+		`, input.AddressLine1, input.City, input.Country, input.PostalCode, input.Type, addressID, userID)
+		if err != nil {
+			log.Println("Error updating address:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+			return
+		}
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Address not found"})
+			return
+		}
+
+		if err := tx.Commit(); err != nil {
+			log.Println("Error committing transaction:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message":    "Address updated",
+			"address_id": addressID,
+		})
+	}
+}
+
+// DeleteAddress deletes an address
+func DeleteAddress(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		addressIDStr := c.Param("id")
+		addressID, err := strconv.Atoi(addressIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid address ID"})
+			return
+		}
+
+		result, err := db.Exec(`
+			DELETE FROM addresses
+			WHERE id = $1 AND user_id = $2
+		`, addressID, userID)
+		if err != nil {
+			log.Println("Error deleting address:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+			return
+		}
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Address not found or not owned by user"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message":    "Address deleted",
+			"address_id": addressID,
+		})
+	}
+}
+
+// Existing handlers (unchanged)
 func AddShippingAddress(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("user_id")
