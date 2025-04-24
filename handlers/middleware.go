@@ -2,47 +2,39 @@
 package handlers
 
 import (
-	"github.com/gin-gonic/gin"
 	"my-api/utils"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func JWTAuthMiddleware(requiredRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get token from Authorization header
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
+		tokenStr := c.GetHeader("Authorization")
+		if tokenStr == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
 			c.Abort()
 			return
 		}
+		if len(tokenStr) > 7 && strings.HasPrefix(tokenStr, "Bearer ") {
+			tokenStr = tokenStr[7:]
+		}
 
-		// Expect format: "Bearer <token>"
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+		claims, err := utils.ParseToken(tokenStr)
+		if err != nil || claims.Type != "access" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid access token"})
 			c.Abort()
 			return
 		}
 
-		// Parse JWT
-		claims, err := utils.ParseJWT(parts[1])
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
-			c.Abort()
-			return
-		}
-
-		// Check role
 		if requiredRole != "" && claims.Role != requiredRole {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 			c.Abort()
 			return
 		}
 
-		// Set username and role in context for handlers
-		c.Set("username", claims.Username)
+		c.Set("user_id", claims.UserID)
 		c.Set("role", claims.Role)
 		c.Next()
 	}

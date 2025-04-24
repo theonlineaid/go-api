@@ -3,33 +3,59 @@ package utils
 
 import (
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
+	"os"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtKey = []byte("your_secret_key") // Replace with a secure key (e.g., from env)
+var jwtKey = []byte(os.Getenv("JWT_SECRET")) // Must be set in env
 
 type Claims struct {
+	UserID   uint   `json:"user_id"`
 	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"` // Hashed; insecure, see security notes
 	Role     string `json:"role"`
+	Type     string `json:"type"` // "access" or "refresh"
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(username, role string) (string, error) {
+func GenerateAccessToken(userID uint, username, email, password, role string) (string, error) {
 	claims := Claims{
+		UserID:   userID,
 		Username: username,
+		Email:    email,
+		Password: password,
 		Role:     role,
+		Type:     "access",
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtKey)
 }
 
-func ParseJWT(tokenString string) (*Claims, error) {
+func GenerateRefreshToken(userID uint, username, email, password, role string) (string, error) {
+	claims := Claims{
+		UserID:   userID,
+		Username: username,
+		Email:    email,
+		Password: password,
+		Role:     role,
+		Type:     "refresh",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtKey)
+}
+
+func ParseToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil

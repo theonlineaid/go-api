@@ -3,9 +3,57 @@
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    role VARCHAR(20) NOT NULL, -- e.g., user, admin, manager
     password VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL DEFAULT 'user'
+    phone_number VARCHAR(20),
+    image TEXT,
+    address_line1 VARCHAR(100),
+    city VARCHAR(50),
+    country VARCHAR(50),
+    postal_code VARCHAR(20),
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Login sessions table
+CREATE TABLE IF NOT EXISTS login_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    browser VARCHAR(100),
+    os VARCHAR(100),
+    device VARCHAR(100),
+    ip_address VARCHAR(45), -- Supports IPv4/IPv6
+    login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Shipping addresses table
+CREATE TABLE IF NOT EXISTS shipping_addresses (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    address_line1 VARCHAR(100) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    country VARCHAR(50) NOT NULL,
+    postal_code VARCHAR(20) NOT NULL,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('home', 'office', 'other')),
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Billing addresses table
+CREATE TABLE IF NOT EXISTS billing_addresses (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    address_line1 VARCHAR(100) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    country VARCHAR(50) NOT NULL,
+    postal_code VARCHAR(20) NOT NULL,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('home', 'office', 'other')),
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Brands table
@@ -23,7 +71,6 @@ CREATE TABLE IF NOT EXISTS brands (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 
 -- Categories table
 CREATE TABLE IF NOT EXISTS categories (
@@ -45,6 +92,7 @@ CREATE TABLE IF NOT EXISTS categories (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Subcategories table
 CREATE TABLE IF NOT EXISTS subcategories (
     id SERIAL PRIMARY KEY,
     category_id INT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
@@ -128,42 +176,3 @@ CREATE TABLE IF NOT EXISTS variation_products (
     current_stock INT DEFAULT 0,
     UNIQUE (product_id, sku)
 );
-
--- Sample data
-INSERT INTO users (username, password, role) 
-VALUES 
-    ('admin', '$2a$10$YOUR_HASH_HERE', 'admin'), -- Replace with bcrypt hash for 'admin123'
-    ('user1', '$2a$10$YOUR_HASH_HERE', 'user'); -- Replace with bcrypt hash for 'user123'
-
-INSERT INTO brands (brand_name, image) 
-VALUES 
-    ('Nike', 'brands/nike_logo.jpg'),
-    ('Adidas', 'brands/adidas_logo.jpg');
-
-INSERT INTO categories (id, category_name, is_special, price_visibility, image) 
-VALUES 
-    (33, 'GLASS', 0, 0, 'categories/glass_icon.jpg');
-
-INSERT INTO subcategories (category_id, subcategory_name, image) 
-VALUES 
-    (33, 'Sunglasses', 'subcategories/sunglasses.jpg');
-
-INSERT INTO attributes (attribute_name) 
-VALUES 
-    ('Color'), 
-    ('Size'), 
-    ('Fabric');
-
-INSERT INTO attribute_values (attribute_id, value) 
-VALUES 
-    ((SELECT id FROM attributes WHERE attribute_name = 'Color'), 'Red'),
-    ((SELECT id FROM attributes WHERE attribute_name = 'Color'), 'Blue'),
-    ((SELECT id FROM attributes WHERE attribute_name = 'Size'), 'Medium'),
-    ((SELECT id FROM attributes WHERE attribute_name = 'Size'), 'Large'),
-    ((SELECT id FROM attributes WHERE attribute_name = 'Fabric'), 'Cotton'),
-    ((SELECT id FROM attributes WHERE attribute_name = 'Fabric'), 'Polyester');
-
--- Indexes for foreign keys in products table
-CREATE INDEX idx_products_brand_id ON products(brand_id);
-CREATE INDEX idx_products_category_id ON products(category_id);
-CREATE INDEX idx_products_sub_category_id ON products(sub_category_id);

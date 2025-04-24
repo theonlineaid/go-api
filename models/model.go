@@ -3,6 +3,68 @@ package models
 
 import "time"
 
+type User struct {
+	ID           int       `json:"id"`
+	Username     string    `json:"username" binding:"required"`
+	Email        string    `json:"email" binding:"required,email"`
+	Password     string    `json:"password" binding:"required"`
+	Role         string    `json:"role" binding:"required"` // user, admin, manager
+	PhoneNumber  *string   `json:"phone_number,omitempty"`
+	Image        *string   `json:"image,omitempty"`
+	AddressLine1 *string   `json:"address_line1,omitempty"`
+	City         *string   `json:"city,omitempty"`
+	Country      *string   `json:"country,omitempty"`
+	PostalCode   *string   `json:"postal_code,omitempty"`
+	IsVerified   bool      `json:"is_verified"`
+	IsBlocked    bool      `json:"is_blocked"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+type Address struct {
+	ID           int       `json:"id"`
+	UserID       int       `json:"user_id"`
+	AddressLine1 string    `json:"address_line1" binding:"required"`
+	City         string    `json:"city" binding:"required"`
+	Country      string    `json:"country" binding:"required"`
+	PostalCode   string    `json:"postal_code" binding:"required"`
+	Type         string    `json:"type" binding:"required,oneof=home office other"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type LoginSession struct {
+	ID        int       `json:"id"`
+	UserID    int       `json:"user_id"`
+	Browser   string    `json:"browser"`
+	OS        string    `json:"os"`
+	Device    string    `json:"device"`
+	IPAddress string    `json:"ip_address"`
+	LoginAt   time.Time `json:"login_at"`
+}
+
+type ShippingAddress struct {
+	ID           int       `json:"id"`
+	UserID       int       `json:"user_id"`
+	AddressLine1 string    `json:"address_line1" binding:"required"`
+	City         string    `json:"city" binding:"required"`
+	Country      string    `json:"country" binding:"required"`
+	PostalCode   string    `json:"postal_code" binding:"required"`
+	Type         string    `json:"type" binding:"required,oneof=home office other"`
+	IsDefault    bool      `json:"is_default"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type BillingAddress struct {
+	ID           int       `json:"id"`
+	UserID       int       `json:"user_id"`
+	AddressLine1 string    `json:"address_line1" binding:"required"`
+	City         string    `json:"city" binding:"required"`
+	Country      string    `json:"country" binding:"required"`
+	PostalCode   string    `json:"postal_code" binding:"required"`
+	Type         string    `json:"type" binding:"required,oneof=home office other"`
+	IsDefault    bool      `json:"is_default"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 type Brand struct {
 	ID                int       `json:"id"`
 	BrandName         string    `json:"brand_name" binding:"required"`

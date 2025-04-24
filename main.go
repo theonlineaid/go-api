@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
-
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
@@ -37,7 +36,6 @@ func main() {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		// AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000"}, // your frontend domains
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
@@ -49,6 +47,7 @@ func main() {
 	// Public routes
 	r.POST("/register", handlers.Register(db))
 	r.POST("/login", handlers.Login(db))
+	r.POST("/refresh", handlers.RefreshToken(db))
 	r.GET("/products", handlers.GetAllProducts(db))
 	r.GET("/products/:id", handlers.GetProductByID(db))
 	r.GET("/brands", handlers.GetAllBrands(db))
@@ -58,7 +57,7 @@ func main() {
 	r.GET("/subcategories", handlers.GetAllSubCategories(db))
 	r.GET("/subcategories/:id", handlers.GetSubCategoryByID(db))
 
-	// Protected routes (admin-only for product, brand, etc.)
+	// Protected routes (admin-only)
 	adminGroup := r.Group("/admin")
 	adminGroup.Use(handlers.JWTAuthMiddleware("admin"))
 	{
@@ -78,14 +77,21 @@ func main() {
 		adminGroup.GET("/subcategories", handlers.GetAllSubCategories(db))
 		adminGroup.GET("/subcategories/:id", handlers.GetSubCategoryByID(db))
 		adminGroup.POST("/attribute-values", handlers.CreateAttributeValue(db))
+		adminGroup.GET("/session", handlers.Session(db))
 	}
 
-	// User routes (example: users can view products)
+	// User routes
 	userGroup := r.Group("/user")
 	userGroup.Use(handlers.JWTAuthMiddleware("user"))
 	{
 		userGroup.GET("/products/:id", handlers.GetProductByID(db))
 		userGroup.GET("/products", handlers.GetAllProducts(db))
+		userGroup.GET("/session", handlers.Session(db))
+		userGroup.POST("/logout", handlers.Logout(db))
+		userGroup.POST("/shipping-address", handlers.AddShippingAddress(db))
+		userGroup.POST("/billing-address", handlers.AddBillingAddress(db))
+		userGroup.PATCH("/shipping-address/:id/default", handlers.SetDefaultShippingAddress(db))
+		userGroup.PATCH("/billing-address/:id/default", handlers.SetDefaultBillingAddress(db))
 	}
 
 	// Start server
