@@ -62,6 +62,19 @@ func main() {
 	adminGroup.Use(handlers.JWTAuthMiddleware("admin"))
 	{
 		adminGroup.POST("/products", handlers.AddProduct(db))
+
+		adminGroup.POST("/attributes", handlers.CreateAttribute(db))
+		adminGroup.GET("/attributes", handlers.GetAllAttributes(db))
+		adminGroup.GET("/attributes/:id", handlers.GetAttributeByID(db))
+		adminGroup.PUT("/attributes/:id", handlers.UpdateAttribute(db))
+		adminGroup.DELETE("/attributes/:id", handlers.DeleteAttribute(db))
+
+		adminGroup.POST("/attribute-values", handlers.CreateAttributeValue(db))
+		adminGroup.GET("/attribute-values/:attribute_id", handlers.GetAllAttributeValues(db))
+		adminGroup.GET("/attribute-value/:id", handlers.GetAttributeValue(db))
+		adminGroup.PUT("/attribute-value/:id", handlers.UpdateAttributeValue(db))
+		adminGroup.DELETE("/attribute-value/:id", handlers.DeleteAttributeValue(db))
+
 		adminGroup.GET("/products", handlers.GetAllProducts(db))
 		adminGroup.GET("/products/:id", handlers.GetProductByID(db))
 		adminGroup.POST("/brands", handlers.CreateBrand(db))
@@ -76,7 +89,6 @@ func main() {
 		adminGroup.DELETE("/subcategories/:id", handlers.DeleteSubCategory(db))
 		adminGroup.GET("/subcategories", handlers.GetAllSubCategories(db))
 		adminGroup.GET("/subcategories/:id", handlers.GetSubCategoryByID(db))
-		adminGroup.POST("/attribute-values", handlers.CreateAttributeValue(db))
 		adminGroup.GET("/session", handlers.Session(db))
 		adminGroup.POST("/address", handlers.AdminCreateAddress(db))
 		adminGroup.PUT("/address/:id", handlers.AdminUpdateAddress(db))

@@ -107,9 +107,11 @@ type Category struct {
 }
 
 type Attribute struct {
-	ID            int    `json:"id"`
-	AttributeName string `json:"attribute_name"`
-	Status        int    `json:"status"`
+	ID              int              `json:"id"`
+	AttributeName   string           `json:"attribute_name"`
+	Status          int              `json:"status"`
+	AttributeValues []AttributeValue `json:"attribute_values"`
+	CreatedAt       time.Time        `json:"created_at"`
 }
 
 type AttributeValue struct {
