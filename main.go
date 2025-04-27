@@ -97,15 +97,26 @@ func main() {
 		userGroup.GET("/session", handlers.Session(db))
 		userGroup.GET("/me", handlers.GetUserDetails(db))
 		userGroup.POST("/logout", handlers.Logout(db))
-		userGroup.POST("/shipping-address", handlers.AddShippingAddress(db))
-		userGroup.POST("/billing-address", handlers.AddBillingAddress(db))
-		userGroup.PATCH("/shipping-address/:id/default", handlers.SetDefaultShippingAddress(db))
-		userGroup.PATCH("/billing-address/:id/default", handlers.SetDefaultBillingAddress(db))
+
 		userGroup.POST("/address", handlers.AddAddress(db))
 		userGroup.GET("/addresses", handlers.GetAddresses(db))
 		userGroup.PUT("/address/:id", handlers.UpdateAddress(db))
 		userGroup.GET("/address/:id", handlers.GetAddressByID(db))
 		userGroup.DELETE("/address/:id", handlers.DeleteAddress(db))
+
+		userGroup.POST("/shipping-address", handlers.AddShippingAddress(db))
+		userGroup.GET("/shipping-addresses", handlers.GetShippingAddresses(db))
+		userGroup.GET("/shipping-address/:id", handlers.GetSingleShippingAddress(db))
+		userGroup.PUT("/shipping-address/:id", handlers.UpdateShippingAddress(db))
+		userGroup.DELETE("/shipping-address/:id", handlers.DeleteShippingAddress(db))
+		userGroup.POST("/billing-address", handlers.AddBillingAddress(db))
+		userGroup.GET("/billing-addresses", handlers.GetBillingAddresses(db))
+		userGroup.GET("/billing-address/:id", handlers.GetSingleBillingAddress(db))
+		userGroup.PUT("/billing-address/:id", handlers.UpdateBillingAddress(db))
+		userGroup.DELETE("/billing-address/:id", handlers.DeleteBillingAddress(db))
+
+		userGroup.PATCH("/shipping-address/:id/default", handlers.SetDefaultShippingAddress(db))
+		userGroup.PATCH("/billing-address/:id/default", handlers.SetDefaultBillingAddress(db))
 	}
 
 	// Start server

@@ -29,19 +29,19 @@ CREATE TABLE IF NOT EXISTS addresses (
 -- Login sessions table
 CREATE TABLE IF NOT EXISTS login_sessions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
+    user_id INTEGER NOT NULL,
     browser VARCHAR(100),
     os VARCHAR(100),
     device VARCHAR(100),
-    ip_address VARCHAR(45), -- Supports IPv4/IPv6
-    login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    ip_address VARCHAR(45),
+    login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Shipping addresses table
 CREATE TABLE IF NOT EXISTS shipping_addresses (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     address_line1 VARCHAR(100) NOT NULL,
     city VARCHAR(50) NOT NULL,
     country VARCHAR(50) NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS shipping_addresses (
 -- Billing addresses table
 CREATE TABLE IF NOT EXISTS billing_addresses (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     address_line1 VARCHAR(100) NOT NULL,
     city VARCHAR(50) NOT NULL,
     country VARCHAR(50) NOT NULL,

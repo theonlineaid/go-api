@@ -20,7 +20,6 @@ type RegisterInput struct {
 	Username    string  `json:"username" binding:"required,min=3"`
 	Email       string  `json:"email" binding:"required,email"`
 	Password    string  `json:"password" binding:"required,min=8"`
-	Role        string  `json:"role" binding:"required,oneof=user admin manager"`
 	PhoneNumber *string `json:"phone_number,omitempty"`
 	Image       *string `json:"image,omitempty"`
 }
@@ -40,10 +39,12 @@ func Register(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
+		role := "user" // Always default to user
+
 		query := `INSERT INTO users (username, email, password, role, phone_number, image, is_verified, is_blocked, created_at, updated_at)
 		          VALUES ($1, $2, $3, $4, $5, $6, FALSE, FALSE, NOW(), NOW()) RETURNING id`
 		var userID int
-		err = db.QueryRow(query, input.Username, input.Email, string(hashedPassword), input.Role, input.PhoneNumber, input.Image).Scan(&userID)
+		err = db.QueryRow(query, input.Username, input.Email, string(hashedPassword), role, input.PhoneNumber, input.Image).Scan(&userID)
 		if err != nil {
 			if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
 				if strings.Contains(pqErr.Detail, "username") {
@@ -58,25 +59,10 @@ func Register(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		// accessToken, err := utils.GenerateAccessToken(uint(userID), input.Username, input.Email, string(hashedPassword), input.Role)
-		// if err != nil {
-		// 	log.Println("Error generating access token:", err)
-		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
-		// 	return
-		// }
-		// refreshToken, err := utils.GenerateRefreshToken(uint(userID), input.Username, input.Email, string(hashedPassword), input.Role)
-		// if err != nil {
-		// 	log.Println("Error generating refresh token:", err)
-		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
-		// 	return
-		// }
-
 		c.JSON(http.StatusOK, gin.H{
 			"message": "User created",
 			"user_id": userID,
-			// "access_token":  accessToken,
-			// "refresh_token": refreshToken,
-			"role": input.Role,
+			"role":    role,
 		})
 	}
 }
