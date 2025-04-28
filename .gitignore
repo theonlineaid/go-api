@@ -17,7 +17,7 @@ vendor/
 .vscode/
 
 # Ignore the Go modules cache (if not using Go modules)
-go.sum
+# go.sum
 # go.mod
 
 # Ignore Docker files
